@@ -1,4 +1,5 @@
 dist
 temp-keys
+node_modules
 
 deploy-multi.sh

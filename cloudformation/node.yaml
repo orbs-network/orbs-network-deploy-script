@@ -178,14 +178,10 @@ Parameters:
   DockerImage:
     Type: String
     Default: ''
-  SecretMessageKey:
+  NodeConfig:
     Type: String
     NoEcho: true
-    Default: 'dummy-secret-message-key'
-  SecretBlockKey:
-    Type: String
-    NoEcho: true
-    Default: 'dummy-secret-block-key'
+    Default: '{}'
 
 Conditions:
   CreateEC2LCWithKeyPair:
@@ -304,8 +300,8 @@ Resources:
         <% }); %>
         <% _.each(peersCidr, function(ip) { %>
         - IpProtocol: tcp
-          FromPort: 60001
-          ToPort: 60001
+          FromPort: 4400
+          ToPort: 4400
           CidrIp: <%= ip %>
         <% }); %>
         - IpProtocol: tcp
@@ -421,13 +417,8 @@ Resources:
               ignoreErrors: true
         provision_keys:
           files:
-            /opt/orbs/private-keys/message/secret-key:
-              content: !Ref SecretMessageKey
-              mode: "000400"
-              # TODO: change later to whatever user we use inside the container
-              owner: root
-            /opt/orbs/private-keys/block/secret-key:
-              content: !Ref SecretBlockKey
+            /opt/orbs/config/node.json:
+              content: !Ref NodeConfig
               mode: "000400"
               # TODO: change later to whatever user we use inside the container
               owner: root

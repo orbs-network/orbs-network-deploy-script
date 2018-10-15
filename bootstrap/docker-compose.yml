@@ -1,115 +1,17 @@
 version: '2'
 
 services:
-  gossip:
+  orbs-network:
     image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-    working_dir: /opt/orbs/projects/services/gossip-service-typescript/
-    command: node dist/index.js /opt/orbs/config/topologies/discovery/node1/gossip.js
+    command: /opt/orbs/orbs-node --silent --config /opt/orbs/config/node.json --log /opt/orbs/logs/node.log
     ports:
-      - 60001:60001
+      - 80:8080
+      - 4400:4400
     env_file:
       - .env
       - .env-secrets
-    environment:
-      SERVICE_NAME: gossip
-      SIGN_MESSAGES: 'true'
     volumes:
-      - /mnt/data/logs:/opt/orbs/logs
-      - /opt/orbs/public-keys/message:/opt/orbs/public-keys/message
-      - /opt/orbs/private-keys/message:/opt/orbs/private-keys/message
-    networks:
-      default:
-
-  consensus:
-    image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-    working_dir: /opt/orbs/projects/services/consensus-service-typescript/
-    command: node dist/index.js /opt/orbs/config/topologies/discovery/node1/consensus.js
-    restart: always
-    env_file:
-      - .env
-      - .env-secrets
-    environment:
-      SERVICE_NAME: consensus
-      CONSENSUS_SIGN_BLOCKS: 'true'
-      ETHEREUM_CONTRACT_ADDRESS: '0x835C2552F6F10A758b7E79D1169F7156e08dd0bF'
-      BLOCK_BUILDER_POLL_INTERVAL: 500
-      MIN_ELECTION_TIMEOUT: 10000
-      MAX_ELECTION_TIMEOUT: 20000
-      HEARBEAT_INTERVAL: 100
-      TRANSACTION_EXPIRATION_TIMEOUT: 240000
-      MSG_LIMIT: 4000000
-      BLOCK_SIZE_LIMIT: 2000
-      VERIFY_TRANSACTION_SIGNATURES: 'true'
-      VERIFY_SUBSCRIPTION: 'true'
-      CONSENSUS_ALGORITHM: 'stub'
-      SUBSCRIPTION_PROFILES: '{"ALPHA":[{"rate":1}]}'
-      CONSENSUS_LEADER_NODE_NAME: 'orbs-global-506367651493-staging-ap-northeast-1'
-    volumes:
-      - /mnt/data/logs:/opt/orbs/logs
-      - /opt/orbs/private-keys/block:/opt/orbs/private-keys/block
-    networks:
-      default:
-
-  public-api:
-    image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-    working_dir: /opt/orbs/projects/services/public-api-service-typescript/
-    command: node dist/index.js /opt/orbs/config/topologies/discovery/node1/public-api.js
-    ports:
-      - 80:80
-    env_file:
-      - .env
-      - .env-secrets
-    environment:
-      SERVICE_NAME: public-api
-    volumes:
-      - /mnt/data/logs:/opt/orbs/logs
-    networks:
-      default:
-
-  storage:
-    image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-    working_dir: /opt/orbs/projects/services/storage-service-typescript/
-    command: node dist/index.js /opt/orbs/config/topologies/discovery/node1/storage.js
-    env_file:
-      - .env
-      - .env-secrets
-    environment:
-      SERVICE_NAME: storage
-      BLOCK_STORAGE_DB_PATH: /opt/orbs/db
-      BLOCK_STORAGE_VERIFY_SIGNATURES: 'true'
-    volumes:
-      - /opt/orbs/public-keys/block:/opt/orbs/public-keys/block
-      - /mnt/data/db:/opt/orbs/db
-      - /mnt/data/logs:/opt/orbs/logs
-    networks:
-      default:
-
-  virtual-machine:
-    image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-    working_dir: /opt/orbs/projects/services/virtual-machine-service-typescript/
-    command: node dist/index.js /opt/orbs/config/topologies/discovery/node1/virtual-machine.js
-    env_file:
-      - .env
-      - .env-secrets
-    environment:
-      SERVICE_NAME: virtual-machine
-    volumes:
-      - /mnt/data/logs:/opt/orbs/logs
-    networks:
-      default:
-
-  sidechain-connector:
-    image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-    working_dir: /opt/orbs/projects/services/sidechain-connector-service-typescript/
-    environment:
-      SERVICE_NAME: sidechain-connector
-    command: node dist/index.js /opt/orbs/config/topologies/discovery/node1/sidechain-connector.js
-    env_file:
-      - .env
-      - .env-secrets
-    environment:
-      SERVICE_NAME: sidechain-connector
-    volumes:
+      - /opt/orbs/config:/opt/orbs/config
       - /mnt/data/logs:/opt/orbs/logs
     networks:
       default:

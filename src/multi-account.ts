@@ -35,22 +35,30 @@ async function main() {
 
   const regions = config.get("region").split(",");
 
-  const privateKeysPath = nconf.get("private-keys") ? nconf.get("private-keys") : `${__dirname}/../temp-keys/private-keys`;
+  const pathToKeys = nconf.get("keys") ? nconf.get("keys") : `${__dirname}/../testnet/keys.json`;
+  const keys = _.pick(JSON.parse(readFileSync(pathToKeys).toString()), ...regions);
+
+  const peers = _.map(regions, (r) => `${r}.global.nodes.staging.orbs-test.com`);
 
   for (const region of regions) {
     const baseConfig = getBaseConfig();
 
     // TODO: fix staging
-    const secretMessageKey = `${privateKeysPath}/message/orbs-global-${accountId}-${baseConfig.NODE_ENV}-${region}`;
-    const secretBlockKey = `${privateKeysPath}/block/orbs-global-${accountId}-${baseConfig.NODE_ENV}-${region}`;
+    const publicKey = keys[region][0];
+    const secretKey = keys[region][1];
+    const peerKeys = _.map(keys, (v, k) => v[0]);
+    const leader = peerKeys[0];
 
     const regionalConfig = _.extend({}, baseConfig, {
       credentials,
       accountId,
       region,
       bucketName,
-      secretMessageKey,
-      secretBlockKey
+      publicKey,
+      secretKey,
+      peerKeys,
+      peers,
+      leader
     });
 
     await execute(regionalConfig);

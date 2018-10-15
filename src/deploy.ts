@@ -203,6 +203,17 @@ async function listResources(cloudFormation: any, options: any) {
   console.log(`ETHEREUM_NODE_HTTP_ADDRESS=http://${ethereumNodeIp}:8545`);
 }
 
+function generateNodeConfig(publicKey: string, secretKey: string, peers: string[], peerKeys: string[], leader: string) {
+  return {
+    "node-public-key": publicKey,
+    "node-private-key": secretKey,
+    "constant-consensus-leader": leader,
+    "federation-nodes": _.map(_.zip(peerKeys, peers), (arr: string[]) => {
+      return {"Key": arr[0], "IP": arr[1], "Port": 4400};
+    })
+  };
+}
+
 async function createOrUpdateNode(cloudFormation: any, options: any) {
   const paramsFileName = options.parity ? "parameters.parity.json" : "parameters.node.json";
 
@@ -216,13 +227,9 @@ async function createOrUpdateNode(cloudFormation: any, options: any) {
       setParameter(standaloneParams, "EthereumElasticIP", options.ethereumNodeIp);
     }
 
-    if (options.secretBlockKey) {
-      setParameter(standaloneParams, "SecretBlockKey", fs.readFileSync(options.secretBlockKey).toString());
-    }
+    const nodeConfig = JSON.stringify(generateNodeConfig(options.publicKey, options.secretKey, options.peers, options.peerKeys, options.leader), undefined, 2);
 
-    if (options.secretMessageKey) {
-      setParameter(standaloneParams, "SecretMessageKey", fs.readFileSync(options.secretMessageKey).toString());
-    }
+    setParameter(standaloneParams, "NodeConfig", nodeConfig);
 
     const sshCidr = (options.sshCidr || "0.0.0.0/0").split(",");
     const peersCidr = (options.peersCidr || "0.0.0.0/0").split(",");
@@ -347,8 +354,9 @@ export function getBaseConfig() {
     parity: config.get("parity"),
     sshCidr: config.get("ssh-cidr"),
     peersCidr: config.get("peers-cidr"),
-    secretBlockKey: config.get("secret-block-key"),
-    secretMessageKey: config.get("secret-message-key"),
+    secretKey: config.get("secret-key"),
+    publicKey: config.get("public-key"),
+    peers: config.get("peers"),
     bootstrap: config.get("bootstrap"),
   };
 
