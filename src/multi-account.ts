@@ -40,28 +40,37 @@ async function main() {
 
   const peers = _.map(regions, (r) => `${r}.global.nodes.staging.orbs-test.com`);
 
-  for (const region of regions) {
-    const baseConfig = getBaseConfig();
+  const step = config.get("step") || 2;
+  const batchedRegionsList = _.chunk(regions, step);
 
-    // TODO: fix staging
-    const publicKey = keys[region][0];
-    const secretKey = keys[region][1];
-    const peerKeys = _.map(keys, (v, k) => v[0]);
-    const leader = peerKeys[0];
+  for (const batch of batchedRegionsList) {
+    try {
+      await Promise.all(batch.map((region: string) => {
+        const baseConfig = getBaseConfig();
 
-    const regionalConfig = _.extend({}, baseConfig, {
-      credentials,
-      accountId,
-      region,
-      bucketName,
-      publicKey,
-      secretKey,
-      peerKeys,
-      peers,
-      leader
-    });
+        // TODO: fix staging
+        const publicKey = keys[region][0];
+        const secretKey = keys[region][1];
+        const peerKeys = _.map(keys, (v, k) => v[0]);
+        const leader = peerKeys[0];
 
-    await execute(regionalConfig);
+        const regionalConfig = _.extend({}, baseConfig, {
+          credentials,
+          accountId,
+          region,
+          bucketName,
+          publicKey,
+          secretKey,
+          peerKeys,
+          peers,
+          leader
+        });
+
+        execute(regionalConfig);
+      }));
+    } catch (e) {
+      console.error(e);
+    }
   }
 }
 
