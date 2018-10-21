@@ -66,7 +66,7 @@ async function main() {
           leader
         });
 
-        execute(regionalConfig);
+        return execute(regionalConfig);
       }));
     } catch (e) {
       console.error(e);
