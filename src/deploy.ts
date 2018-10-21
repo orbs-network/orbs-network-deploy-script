@@ -288,14 +288,18 @@ export async function execute(options: any) {
     return _.isObject(_.find(stacks, (s: any) => s.StackName === getBasicInfrastructureStackName(options) && _.includes(["CREATE_COMPLETE", "UPDATE_COMPLETE"], s.StackStatus)));
   });
 
-  if (options.tagDockerImage) {
-    tagDockerImage(options);
-  }
+  const dockerImageReady = new Promise((resolve, reject) => {
+    if (options.tagDockerImage) {
+      tagDockerImage(options);
+    }
 
-  if (options.pushDockerImage) {
-    console.log(`Pushing docker image to ${options.region}...`);
-    pushDockerImage(options);
-  }
+    if (options.pushDockerImage) {
+      console.log(`Pushing docker image to ${options.region}...`);
+      pushDockerImage(options);
+    }
+
+    resolve();
+  });
 
   const stackName = getNodeStackName(options);
 
@@ -314,7 +318,7 @@ export async function execute(options: any) {
   }
 
   if (options.deployNode || options.updateNode) {
-    await waitForStacks(cloudFormation, options.region, (stacks: any) => {
+    const stacksReady = waitForStacks(cloudFormation, options.region, (stacks: any) => {
       const nodeStack = _.find(stacks, { StackName: stackName });
 
       // TODO: fix never-ending update loop if node does not exit
@@ -327,6 +331,8 @@ export async function execute(options: any) {
     });
 
     console.log(`${options.deployNode ? "Deploying" : "Updating"} node ${getNodeStackName(options)} in ${options.region}...`);
+
+    await Promise.all([stacksReady, dockerImageReady]);
 
     await createOrUpdateNode(cloudFormation, options);
   }
