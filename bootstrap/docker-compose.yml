@@ -13,6 +13,8 @@ services:
     volumes:
       - /opt/orbs/config:/opt/orbs/config
       - /mnt/data/logs:/opt/orbs/logs
+    sysctls:
+      net.core.somaxconn: 25000
     networks:
       default:
 
