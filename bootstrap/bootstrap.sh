@@ -10,6 +10,9 @@ fi
 $(aws ecr get-login --no-include-email --region $REGION)
 pip install docker-compose
 
+export STRELETS_VERSION=9b50347686e62e25789a094fc9ff23503d4655d0
+curl -q https://s3.amazonaws.com/orbs-network-releases/infrastructure/strelets/strelets-${STRELETS_VERSION}.bin -o /usr/local/bin/strelets && chmod +x /usr/local/bin/strelets
+
 export ENV_FILE=/opt/orbs/.env
 
 echo NODE_IP=$NODE_IP >> $ENV_FILE
@@ -25,3 +28,11 @@ export DOCKER_IMAGE=${DOCKER_IMAGE-506367651493.dkr.ecr.us-west-2.amazonaws.com/
 crontab /opt/orbs/crontab
 
 /usr/local/bin/docker-compose -f /opt/orbs/docker-compose.yml up -d
+
+docker pull $DOCKER_IMAGE:$DOCKER_TAG
+
+cd /opt/orbs && \
+/usr/local/bin/strelets provision-virtual-chain \
+    --keys-config keys.json \
+    --chain-config chain.json \
+    --peers-config network.json

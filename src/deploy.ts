@@ -88,7 +88,7 @@ function uploadBootstrap(options: any) {
   shell.exec(`${getAWSCredentialsAsEnvVars(options)} aws s3 sync ${bootstrapPath}/ s3://${options.bucketName}-${options.NODE_ENV}-${options.region}/${s3Path}/`);
 }
 
-function getDockerImageName(options: any) {
+export function getDockerImageName(options: any) {
   return `${options.accountId}.dkr.ecr.${options.region}.amazonaws.com/orbs-network-${options.NODE_ENV}-${options.region}`;
 }
 
@@ -104,7 +104,7 @@ function pushDockerImage(options: any) {
   shell.exec(`docker push ${dockerImage}:${dockerTag}`);
 }
 
-function getDockerImageTag(options: any) {
+export function getDockerImageTag(options: any) {
   const defaultTag = getDefaultDockerImageTag();
   return options.dockerTag || defaultTag;
 }
@@ -363,7 +363,7 @@ export function getBaseConfig() {
     secretKey: config.get("secret-key"),
     publicKey: config.get("public-key"),
     peers: config.get("peers"),
-    bootstrap: config.get("bootstrap"),
+    bootstrap: config.get("bootstrap") || `${__dirname}/../bootstrap`,
   };
 
   return nodeConfig;

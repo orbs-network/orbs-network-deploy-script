@@ -1,7 +1,8 @@
 import * as _ from "lodash";
 import * as nconf from "nconf";
-import { config, getBaseConfig, execute } from "./deploy";
-import { readFileSync } from "fs";
+import { config, getBaseConfig, execute, getDockerImageName, getDockerImageTag } from "./deploy";
+import { readFileSync, writeFileSync } from "fs";
+import { join } from "path";
 
 const parse = require("csv-parse/lib/sync");
 
@@ -19,6 +20,23 @@ function parseCredentials(path: string): any {
   catch (e) {
     console.warn(`WARNING: Could not find credentials, proceeding without them`);
   }
+}
+
+function getStreletsTemplates(): any {
+  return {
+    keys: {
+      template: _.template(readFileSync("./strelets/keys.template.json").toString()),
+      path: "keys.json"
+    },
+    network: {
+      template: JSON.stringify,
+      path: "network.json"
+    },
+    vchain: {
+      template: _.template(readFileSync("./strelets/vchain.template.json").toString()),
+      path: "chain.json"
+    }
+  };
 }
 
 async function main() {
@@ -65,6 +83,26 @@ async function main() {
           peers,
           leader
         });
+
+        const templates = getStreletsTemplates();
+
+        writeFileSync(join(baseConfig.bootstrap, templates.keys.path), templates.keys.template({
+          publicKey,
+          secretKey,
+          leader
+        }));
+
+        writeFileSync(join(baseConfig.bootstrap, templates.vchain.path), templates.vchain.template({
+          dockerImage: getDockerImageName(regionalConfig),
+          dockerTag: getDockerImageTag(regionalConfig)
+        }));
+
+        writeFileSync(join(baseConfig.bootstrap, templates.network.path), templates.network.template(_.map(peers, (ip, idx) => {
+          return {
+            Key: peerKeys[idx],
+            IP: ip
+          };
+        })));
 
         return execute(regionalConfig);
       }));
