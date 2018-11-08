@@ -10,7 +10,7 @@ fi
 $(aws ecr get-login --no-include-email --region $REGION)
 pip install docker-compose
 
-export STRELETS_VERSION=9b50347686e62e25789a094fc9ff23503d4655d0
+export STRELETS_VERSION=baebf901a1a1fff7f06b01d0b6e39a02d2e68445
 curl -q https://s3.amazonaws.com/orbs-network-releases/infrastructure/strelets/strelets-${STRELETS_VERSION}.bin -o /usr/local/bin/strelets && chmod +x /usr/local/bin/strelets
 
 export ENV_FILE=/opt/orbs/.env
