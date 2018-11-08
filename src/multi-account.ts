@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import * as nconf from "nconf";
 import { config, getBaseConfig, execute, getDockerImageName, getDockerImageTag } from "./deploy";
-import { readFileSync, writeFileSync, mkdtempSync, copyFileSync, readdirSync, copyFile } from "fs";
+import { readFileSync, writeFileSync, mkdtempSync, readdirSync } from "fs";
 import { join } from "path";
 
 const parse = require("csv-parse/lib/sync");
@@ -43,7 +43,8 @@ function copyDir(source: string, target: string) {
   console.log(`Copying from ${source} to ${target}`);
 
   _.map(readdirSync(source), (f) => {
-    copyFileSync(join(source, f), join(target, f));
+    const contents = readFileSync(join(source, f)).toString();
+    writeFileSync(join(target, f), contents);
   });
 }
 
