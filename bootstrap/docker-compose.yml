@@ -1,18 +1,24 @@
 version: '2.1'
 
 services:
-  orbs-network:
-    image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-    command: /opt/orbs/orbs-node --silent --config /opt/orbs/config/node.json --log /opt/orbs/logs/node.log
-    ports:
-      - 80:8080
-      - 4400:4400
-    env_file:
-      - .env
-      - .env-secrets
-    volumes:
-      - /opt/orbs/config:/opt/orbs/config
-      - /mnt/data/logs:/opt/orbs/logs
+  # orbs-network:
+  #   image: ${DOCKER_IMAGE}:${DOCKER_TAG}
+  #   command: /opt/orbs/orbs-node --silent --config /opt/orbs/config/node.json --log /opt/orbs/logs/node.log
+  #   ports:
+  #     - 80:8080
+  #     - 4400:4400
+  #   env_file:
+  #     - .env
+  #     - .env-secrets
+  #   volumes:
+  #     - /opt/orbs/config:/opt/orbs/config
+  #     - /mnt/data/logs:/opt/orbs/logs
+  #   sysctls:
+  #     net.core.somaxconn: 25000
+
+  dummy:
+    image: busybox
+    command: echo "Success"
     sysctls:
       net.core.somaxconn: 25000
     networks:

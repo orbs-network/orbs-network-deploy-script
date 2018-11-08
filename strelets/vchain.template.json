@@ -1,0 +1,11 @@
+{
+  "Id": 42,
+  "HttpPort": 80,
+  "GossipPort": 4400,
+  "DockerConfig": {
+    "ContainerNamePrefix": "orbs-network",
+    "Image": "<%= dockerImage %>",
+    "Tag": "<%= dockerTag %>",
+    "Pull": false
+  }
+}

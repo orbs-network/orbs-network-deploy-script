@@ -1,7 +1,8 @@
 import * as _ from "lodash";
 import * as nconf from "nconf";
-import { config, getBaseConfig, execute } from "./deploy";
-import { readFileSync } from "fs";
+import { config, getBaseConfig, execute, getDockerImageName, getDockerImageTag } from "./deploy";
+import { readFileSync, writeFileSync, mkdtempSync, copyFileSync, readdirSync, copyFile } from "fs";
+import { join } from "path";
 
 const parse = require("csv-parse/lib/sync");
 
@@ -19,6 +20,31 @@ function parseCredentials(path: string): any {
   catch (e) {
     console.warn(`WARNING: Could not find credentials, proceeding without them`);
   }
+}
+
+function getStreletsTemplates(): any {
+  return {
+    keys: {
+      template: _.template(readFileSync("./strelets/keys.template.json").toString()),
+      path: "keys.json"
+    },
+    network: {
+      template: JSON.stringify,
+      path: "network.json"
+    },
+    vchain: {
+      template: _.template(readFileSync("./strelets/vchain.template.json").toString()),
+      path: "chain.json"
+    }
+  };
+}
+
+function copyDir(source: string, target: string) {
+  console.log(`Copying from ${source} to ${target}`);
+
+  _.map(readdirSync(source), (f) => {
+    copyFileSync(join(source, f), join(target, f));
+  });
 }
 
 async function main() {
@@ -54,6 +80,9 @@ async function main() {
         const peerKeys = _.map(keys, (v, k) => v[0]);
         const leader = peerKeys[0];
 
+        const bootstrap = mkdtempSync(`/tmp/bootstrap-${region}-`);
+        copyDir(baseConfig.bootstrap, bootstrap);
+
         const regionalConfig = _.extend({}, baseConfig, {
           credentials,
           accountId,
@@ -63,8 +92,29 @@ async function main() {
           secretKey,
           peerKeys,
           peers,
-          leader
+          leader,
+          bootstrap,
         });
+
+        const templates = getStreletsTemplates();
+
+        writeFileSync(join(bootstrap, templates.keys.path), templates.keys.template({
+          publicKey,
+          secretKey,
+          leader
+        }));
+
+        writeFileSync(join(bootstrap, templates.vchain.path), templates.vchain.template({
+          dockerImage: getDockerImageName(regionalConfig),
+          dockerTag: getDockerImageTag(regionalConfig)
+        }));
+
+        writeFileSync(join(bootstrap, templates.network.path), templates.network.template(_.map(peers, (ip, idx) => {
+          return {
+            Key: peerKeys[idx],
+            IP: ip
+          };
+        })));
 
         return execute(regionalConfig);
       }));
