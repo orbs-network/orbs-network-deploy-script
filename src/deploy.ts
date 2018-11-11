@@ -375,7 +375,7 @@ export async function execute(options: any) {
     if (options.waitUntilSync) {
       targetBlockHeight = await tryWithDefault(async () => {
         return getBlockHeight(nodeIp);
-      }, 10, 0);
+      }, 5, 0);
     }
 
     console.log(`Current block height ${targetBlockHeight}`);
