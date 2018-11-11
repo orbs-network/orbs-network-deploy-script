@@ -363,6 +363,8 @@ export async function execute(options: any) {
     }, 5, 0);
   }
 
+  console.log(`Current block height ${targetBlockHeight}`);
+
   if (options.deployNode || options.updateNode || options.updateConfiguration) {
     console.log(`Uploading bootstrap files to ${options.region}...`);
     uploadBootstrap(options);
@@ -378,8 +380,6 @@ export async function execute(options: any) {
   }
 
   if (options.deployNode || options.updateNode) {
-    console.log(`Current block height ${targetBlockHeight}`);
-
     const stacksReady = waitForStacks(cloudFormation, options.region, (stacks: any) => {
       const nodeStack = _.find(stacks, { StackName: stackName });
 
