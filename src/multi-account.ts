@@ -80,6 +80,7 @@ async function main() {
         const secretKey = keys[region][1];
         const peerKeys = _.map(keys, (v, k) => v[0]);
         const leader = peerKeys[0];
+        const waitUntilSync = leader == publicKey;
 
         const bootstrap = mkdtempSync(`/tmp/bootstrap-${region}-`);
         copyDir(baseConfig.bootstrap, bootstrap);
@@ -95,6 +96,7 @@ async function main() {
           peers,
           leader,
           bootstrap,
+          waitUntilSync,
         });
 
         const templates = getStreletsTemplates();

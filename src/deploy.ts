@@ -5,6 +5,7 @@ const AWS = require("aws-sdk");
 const shell = require("shelljs");
 const fs = require("fs");
 const nconf = require("nconf");
+const request = require("request-promise");
 
 const { REGION, NETWORK, DNS_ZONE } = process.env;
 
@@ -13,6 +14,37 @@ const argsConfig = {
 };
 
 export const config = nconf.env(argsConfig).argv(argsConfig);
+
+async function getBlockHeight(endpoint: string): Promise<any> {
+  const body = await request(`http://${endpoint}/metrics`);
+  return JSON.parse(body)["BlockStorage.BlockHeight"].Value;
+}
+
+async function waitUntilSync(endpoint: string, targetBlockHeight: any) {
+  return new Promise((resolve, reject) => {
+    const start = new Date().getTime();
+
+    const interval = setInterval(async () => {
+      // Reject after 15 minutes
+      if ((new Date().getTime() - start) / 1000 > 60 * 15) {
+        resolve("Sync timed out");
+      }
+
+      try {
+        const newBlockHeight = await getBlockHeight(endpoint);
+        console.log(`Waiting for the node ${endpoint} to sync...`);
+
+        if (newBlockHeight >= targetBlockHeight) {
+            clearInterval(interval);
+            const diff = (Date.now() - start) / 1000;
+            resolve(`Sync finished successfully in ${diff}s`);
+        }
+      } catch (e) {
+        console.log(`Error: ${e}`);
+      }
+    }, 5000);
+  });
+}
 
 function setParameter(params: any, key: string, value: string | number) {
   const param = _.find(params, (p: any) => p.ParameterKey === key);
@@ -185,7 +217,7 @@ async function createOrUpdateBasicInfrastructure(cloudFormation: any, options: a
   }
 }
 
-async function listResources(cloudFormation: any, options: any) {
+async function listResources(cloudFormation: any, options: any): Promise<any> {
   const basicInfrastructureStackName = getBasicInfrastructureStackName(options);
   const stackDescription: any = await describeStack(cloudFormation, basicInfrastructureStackName);
   const outputs = stackDescription.Stacks[0].Outputs;
@@ -201,6 +233,10 @@ async function listResources(cloudFormation: any, options: any) {
 
   console.log("Local Ethereum configuration (do !not! put into .env file)");
   console.log(`ETHEREUM_NODE_HTTP_ADDRESS=http://${ethereumNodeIp}:8545`);
+
+  return {
+    nodeIp, ethereumNodeIp
+  };
 }
 
 function generateNodeConfig(publicKey: string, secretKey: string, peers: string[], peerKeys: string[], leader: string) {
@@ -318,6 +354,11 @@ export async function execute(options: any) {
   }
 
   if (options.deployNode || options.updateNode) {
+    const { nodeIp } = await listResources(cloudFormation, options);
+    const targetBlockHeight = await getBlockHeight(nodeIp);
+
+    console.log(`Current block height ${targetBlockHeight}`);
+
     const stacksReady = waitForStacks(cloudFormation, options.region, (stacks: any) => {
       const nodeStack = _.find(stacks, { StackName: stackName });
 
@@ -335,6 +376,10 @@ export async function execute(options: any) {
     await Promise.all([stacksReady, dockerImageReady]);
 
     await createOrUpdateNode(cloudFormation, options);
+
+    if (options.waitUntilSync) {
+      console.log(await waitUntilSync(nodeIp, targetBlockHeight));
+    }
   }
 }
 
@@ -364,6 +409,7 @@ export function getBaseConfig() {
     publicKey: config.get("public-key"),
     peers: config.get("peers"),
     bootstrap: config.get("bootstrap") || `${__dirname}/../bootstrap`,
+    waitUntilSync: false,
   };
 
   return nodeConfig;

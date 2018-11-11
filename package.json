@@ -16,10 +16,13 @@
   "license": "MIT",
   "dependencies": {
     "@types/nconf": "^0.0.37",
+    "@types/request": "^2.48.1",
     "aws-sdk": "^2.192.0",
     "csv-parse": "^2.0.4",
     "lodash": "^4.17.5",
     "nconf": "^0.10.0",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2",
     "shelljs": "^0.8.1"
   },
   "devDependencies": {
