@@ -354,6 +354,15 @@ export async function execute(options: any) {
 
   const stackName = getNodeStackName(options);
 
+  const { nodeIp } = await listResources(cloudFormation, options);
+  let targetBlockHeight;
+
+  if (options.waitUntilSync) {
+    targetBlockHeight = await tryWithDefault(async () => {
+      return getBlockHeight(nodeIp);
+    }, 5, 0);
+  }
+
   if (options.deployNode || options.updateNode || options.updateConfiguration) {
     console.log(`Uploading bootstrap files to ${options.region}...`);
     uploadBootstrap(options);
@@ -369,15 +378,6 @@ export async function execute(options: any) {
   }
 
   if (options.deployNode || options.updateNode) {
-    const { nodeIp } = await listResources(cloudFormation, options);
-    let targetBlockHeight;
-
-    if (options.waitUntilSync) {
-      targetBlockHeight = await tryWithDefault(async () => {
-        return getBlockHeight(nodeIp);
-      }, 5, 0);
-    }
-
     console.log(`Current block height ${targetBlockHeight}`);
 
     const stacksReady = waitForStacks(cloudFormation, options.region, (stacks: any) => {
