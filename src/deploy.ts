@@ -6,6 +6,7 @@ const shell = require("shelljs");
 const fs = require("fs");
 const nconf = require("nconf");
 const request = require("request-promise");
+const bluebird = require("bluebird");
 
 const { REGION, NETWORK, DNS_ZONE } = process.env;
 
@@ -18,6 +19,20 @@ export const config = nconf.env(argsConfig).argv(argsConfig);
 async function getBlockHeight(endpoint: string): Promise<any> {
   const body = await request(`http://${endpoint}/metrics`);
   return JSON.parse(body)["BlockStorage.BlockHeight"].Value;
+}
+
+async function tryWithDefault(f: Function, tries: number, defaultValue: any) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await f();
+    } catch (e) {
+      console.log(`Error: ${e}`);
+    }
+
+    await bluebird.delay(1000);
+  }
+
+  return defaultValue;
 }
 
 async function waitUntilSync(endpoint: string, targetBlockHeight: any) {
@@ -355,7 +370,13 @@ export async function execute(options: any) {
 
   if (options.deployNode || options.updateNode) {
     const { nodeIp } = await listResources(cloudFormation, options);
-    const targetBlockHeight = await getBlockHeight(nodeIp);
+    let targetBlockHeight;
+
+    if (options.waitUntilSync) {
+      targetBlockHeight = await tryWithDefault(async () => {
+        return getBlockHeight(nodeIp);
+      }, 10, 0);
+    }
 
     console.log(`Current block height ${targetBlockHeight}`);
 
